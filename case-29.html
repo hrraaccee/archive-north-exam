@@ -1,0 +1,26 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Дело 29 · Очередь выдачи · Архив Север</title><link rel="stylesheet" href="style.css"></head><body><nav aria-label="Навигация"><a class="brand" href="index.html"><span class="sig" aria-hidden="true">С.</span>Архив Север</a><span class="meta">Дело 29 / материалы</span></nav><main><section class="hero"><div><div class="eyebrow">Материалы на экспертизу / 29</div><h1>Очередь выдачи</h1><p>Внутренний сервис готовит архив документа к выдаче. Пока заявка лежит в очереди, документ можно отредактировать. Согласие рецензента относится к конкретному документу и его редакции. Система может хранить сколько угодно старых согласий.</p></div><div class="stamp"><b>29</b>номер дела</div></section><section class="panel"><h2>Предмет проверки</h2><p class="brief"><b>Правило сервиса</b>Выдать байты можно, только если именно редакцию, из которой взяты эти байты, одобрили как минимум два разных действующих рецензента. Автор документа не считается рецензентом для своего документа.</p><h3>Договорённости о данных</h3><p>ticket.document и requested_revision фиксируются при создании заявки и не меняются. Содержимое blob неизменно, blob.revision совпадает с ключом в db.blobs. При правке создаётся новая редакция и обновляется current_revision. Согласия не переносятся между редакциями. db — согласованный снимок, внутри одного вызова состояние не меняется.</p></section><h2 id="files">Исходники</h2><div class="jump"><a href="#file-1">delivery.py</a><a href="#file-2">select_blob.py</a><a href="#file-3">votes.py</a><a href="#file-4">binding.py</a><a href="#answer">Формат ответа ↓</a></div><section class="codebox" id="file-1"><h3>delivery.py</h3><pre><code><span class="ln">01 │ </span>from select_blob import select_blob
+<span class="ln">02 │ </span>from votes import reviewers
+<span class="ln">03 │ </span>from binding import approval_revision
+<span class="ln">04 │ </span>
+<span class="ln">05 │ </span>def deliver(ticket, db):
+<span class="ln">06 │ </span>    blob = select_blob(ticket, db)
+<span class="ln">07 │ </span>    if blob is None:
+<span class="ln">08 │ </span>        return None
+<span class="ln">09 │ </span>    rev = approval_revision(ticket, blob)
+<span class="ln">10 │ </span>    people = reviewers(ticket.document, rev, db)
+<span class="ln">11 │ </span>    if len(people) &lt; 2:
+<span class="ln">12 │ </span>        return None
+<span class="ln">13 │ </span>    return blob.content</code></pre></section><section class="codebox" id="file-2"><h3>select_blob.py</h3><pre><code><span class="ln">01 │ </span>def select_blob(ticket, db):
+<span class="ln">02 │ </span>    document = db.documents.get(ticket.document)
+<span class="ln">03 │ </span>    if document is None or document.archived:
+<span class="ln">04 │ </span>        return None
+<span class="ln">05 │ </span>    return db.blobs.get((document.id, document.current_revision))</code></pre></section><section class="codebox" id="file-3"><h3>votes.py</h3><pre><code><span class="ln">01 │ </span>def reviewers(document, revision, db):
+<span class="ln">02 │ </span>    owner = db.documents[document].owner
+<span class="ln">03 │ </span>    result = set()
+<span class="ln">04 │ </span>    for vote in db.votes:
+<span class="ln">05 │ </span>        if (vote.document, vote.revision) != (document, revision):
+<span class="ln">06 │ </span>            continue
+<span class="ln">07 │ </span>        if vote.person != owner and vote.person in db.active_reviewers:
+<span class="ln">08 │ </span>            result.add(vote.person)
+<span class="ln">09 │ </span>    return result</code></pre></section><section class="codebox" id="file-4"><h3>binding.py</h3><pre><code><span class="ln">01 │ </span>def approval_revision(ticket, blob):
+<span class="ln">02 │ </span>    return ticket.requested_revision</code></pre></section><section class="instructions" id="answer"><h2>Формат ответа</h2><p>Укажи номер дела и один вывод: <strong>«нарушение»</strong>, <strong>«правило соблюдено»</strong> или <strong>«недостаточно данных»</strong>. Вывод касается только сформулированного правила.</p><ol class="rules"><li>Назови файлы, функции и строки, на которых основан вывод.</li><li>Проследи путь данных от входа до результата. Объясни, какое изменение состояния имеет значение.</li><li>Если данных не хватает, назови недостающий контракт и объясни, как два допустимых варианта меняют вывод.</li></ol><p class="sub">Ответ верни в своём чате. Эта страница не принимает и не сохраняет ответы.</p></section><p class="foot"><a href="index.html">← Вернуться в каталог</a></p></main><footer>Архив Север · Учебные материалы · Вымышленный сервис командных заметок и документов</footer></body></html>

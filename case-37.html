@@ -1,0 +1,31 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Дело 37 · Поисковая выдача · Архив Север</title><link rel="stylesheet" href="style.css"></head><body><nav aria-label="Навигация"><a class="brand" href="index.html"><span class="sig" aria-hidden="true">С.</span>Архив Север</a><span class="meta">Дело 37 / материалы</span></nav><main><section class="hero"><div><div class="eyebrow">Материалы на экспертизу / 37</div><h1>Поисковая выдача</h1><p>Поиск возвращает фрагменты текста заметок. Закрытая заметка видна автору, активному участнику её группы или читателю с прямым разрешением. Индекс — исторический снимок: обновляется ночью, а отзыв прав вступает в силу сразу. Все объекты запроса относятся к одному логическому моменту.</p></div><div class="stamp"><b>37</b>номер дела</div></section><section class="panel"><h2>Предмет проверки</h2><p class="brief"><b>Правило сервиса</b>После отзыва последнего основания доступа поиск не должен возвращать ни одного символа текста закрытой заметки этому читателю. Проверяй только этот результат, а не присутствие идентификатора во внутреннем индексе.</p><h3>Договорённости о данных</h3><p>index.lookup возвращает только попадания для данного reader. В hit сохранены результат may_read, группа, версия текста и значения версий на момент индексации. notes, memberships и direct_grants — текущее состояние. Изменение участников группы не меняет идентификатор группы и версию текста. Любое изменение прав, владельца или группы увеличивает глобальный acl_epoch; номера не повторяются. note.id уникален и не переиспользуется. Адаптер хранения — внешний модуль: hit.stamp записан вызовом того же access_stamp при индексации. Состав метки в этом комплекте не указан.</p></section><h2 id="files">Исходники</h2><div class="jump"><a href="#file-1">search.py</a><a href="#file-2">decisions.py</a><a href="#file-3">access.py</a><a href="#file-4">versions.py</a><a href="#file-5">output.py</a><a href="#answer">Формат ответа ↓</a></div><section class="codebox" id="file-1"><h3>search.py</h3><pre><code><span class="ln">01 │ </span>from decisions import keep
+<span class="ln">02 │ </span>from output import snippet
+<span class="ln">03 │ </span>
+<span class="ln">04 │ </span>def search(reader, term, now, index):
+<span class="ln">05 │ </span>    hits = index.lookup(reader, term)
+<span class="ln">06 │ </span>    result = []
+<span class="ln">07 │ </span>    for hit in hits:
+<span class="ln">08 │ </span>        note = now.notes.get(hit.note_id)
+<span class="ln">09 │ </span>        if note is not None and keep(reader, hit, note, now):
+<span class="ln">10 │ </span>            result.append(snippet(note))
+<span class="ln">11 │ </span>    return tuple(result)</code></pre></section><section class="codebox" id="file-2"><h3>decisions.py</h3><pre><code><span class="ln">01 │ </span>from access import may_read
+<span class="ln">02 │ </span>from versions import matches
+<span class="ln">03 │ </span>
+<span class="ln">04 │ </span>def keep(reader, hit, note, now):
+<span class="ln">05 │ </span>    if not hit.allowed_at_index:
+<span class="ln">06 │ </span>        return may_read(reader, note, now)
+<span class="ln">07 │ </span>    if matches(hit, note, now):
+<span class="ln">08 │ </span>        return True
+<span class="ln">09 │ </span>    return may_read(reader, note, now)</code></pre></section><section class="codebox" id="file-3"><h3>access.py</h3><pre><code><span class="ln">01 │ </span>def may_read(reader, note, now):
+<span class="ln">02 │ </span>    if reader == note.owner:
+<span class="ln">03 │ </span>        return True
+<span class="ln">04 │ </span>    if (reader, note.id) in now.direct_grants:
+<span class="ln">05 │ </span>        return True
+<span class="ln">06 │ </span>    return (reader, note.group) in now.memberships</code></pre></section><section class="codebox" id="file-4"><h3>versions.py</h3><pre><code><span class="ln">01 │ </span>from storage_adapter import access_stamp
+<span class="ln">02 │ </span>
+<span class="ln">03 │ </span>def matches(hit, note, now):
+<span class="ln">04 │ </span>    return (
+<span class="ln">05 │ </span>        hit.text_version == note.text_version
+<span class="ln">06 │ </span>        and hit.stamp == access_stamp(now, note)
+<span class="ln">07 │ </span>    )</code></pre></section><section class="codebox" id="file-5"><h3>output.py</h3><pre><code><span class="ln">01 │ </span>def snippet(note):
+<span class="ln">02 │ </span>    return note.text[:80]</code></pre></section><section class="instructions" id="answer"><h2>Формат ответа</h2><p>Укажи номер дела и один вывод: <strong>«нарушение»</strong>, <strong>«правило соблюдено»</strong> или <strong>«недостаточно данных»</strong>. Вывод касается только сформулированного правила.</p><ol class="rules"><li>Назови файлы, функции и строки, на которых основан вывод.</li><li>Проследи путь данных от входа до результата. Объясни, какое изменение состояния имеет значение.</li><li>Если данных не хватает, назови недостающий контракт и объясни, как два допустимых варианта меняют вывод.</li></ol><p class="sub">Ответ верни в своём чате. Эта страница не принимает и не сохраняет ответы.</p></section><p class="foot"><a href="index.html">← Вернуться в каталог</a></p></main><footer>Архив Север · Учебные материалы · Вымышленный сервис командных заметок и документов</footer></body></html>
